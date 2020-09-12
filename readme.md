@@ -1,0 +1,2 @@
+# StoryConsole
+Console文字冒險故事框架
