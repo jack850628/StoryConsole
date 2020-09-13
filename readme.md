@@ -67,7 +67,7 @@ Console文字冒險故事框架 \
 		"option": [
 			{
 				"text": "選項(為javascript表達式)",
-				"goto": "要跳至的故事JSON檔(不包含副檔名且必須放在story資料夾中)"
+				"goto": "選擇該選項後，要跳至的故事JSON檔(不包含副檔名且必須放在story資料夾中)"
 			},
 			...
 		]
@@ -77,7 +77,7 @@ Console文字冒險故事框架 \
 ##### goto
 ```
 {
-	"goto": "當story內的故事內容跑完後要跳至的故事JSON檔(不包含副檔名且必須放在story資料夾中)"
+	"goto": "跳至的指定的故事JSON檔(不包含副檔名且必須放在story資料夾中)"
 }
 ```
 ##### sleep
