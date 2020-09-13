@@ -6,8 +6,14 @@ using System.Threading.Tasks;
 
 namespace StoryConsole
 {
-    class StoryTitle
+    class Select
     {
-        public string name, startFrom;
+        public string title;
+        public SelectOption[] option;
+    }
+
+    class SelectOption
+    {
+        public string text, @goto;
     }
 }

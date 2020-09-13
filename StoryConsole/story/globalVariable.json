@@ -1,0 +1,13 @@
+[
+	{
+		"name": "test",
+		"type": "string",
+		"value": "測試字串變數"
+	},
+	{
+		"name": "test2",
+		"type": "number",
+		"value": 123
+	}
+
+]

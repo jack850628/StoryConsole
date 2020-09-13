@@ -1,0 +1,11 @@
+[
+	{
+		"exec": "SC.text3 = true"
+	},
+	{
+		"show": "'我是字串' + SC.test"
+	},
+	{
+		"show": "'YATTA大成功'"
+	}
+]

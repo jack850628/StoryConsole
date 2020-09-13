@@ -1,47 +1,55 @@
-﻿using Newtonsoft.Json;
+﻿using Jint;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace StoryConsole
 {
     class Program
     {
-        const string VERSION = "1.0.0912";
+        const string VERSION = "1.1.0914";
         const string SAVE_DIR = @"\save";
         const string STORY_DIR = @"\story";
+        static Engine jsEngine = null;
+        readonly static List<int> floorsLine = new List<int>();
+
         enum GameStatus
         {
-            RUN, STOP
+            RUN, STOP, BREAK, CONTINUE, GOTO
         }
         static GameStatus gameStatus = GameStatus.STOP;
 
+        enum IfStatus
+        {
+            CONDITION_NOT_MET, CONDITION_MET
+        }
+
         static void Main(string[] args)
         {
-            var storyTitle = JsonConvert.DeserializeObject<StoryTitle>(File.ReadAllText(Directory.GetCurrentDirectory() + STORY_DIR + @"\story.json"));
-            var option = new StorySelectOption[]{
-                new StorySelectOption(){text = "開始遊戲"},
-                new StorySelectOption(){text = "繼續遊戲"},
-                new StorySelectOption(){text = "人物介紹"},
-                new StorySelectOption(){text = "關於"},
-                new StorySelectOption(){text = "結束"},
+            var storyTitle = JsonConvert.DeserializeObject<Story>(File.ReadAllText(Directory.GetCurrentDirectory() + STORY_DIR + @"\story.json"));
+            var option = new SelectOption[]{
+                new SelectOption(){text = "開始遊戲"},
+                new SelectOption(){text = "繼續遊戲"},
+                new SelectOption(){text = "人物介紹"},
+                new SelectOption(){text = "關於"},
+                new SelectOption(){text = "結束"},
             };
             while (true)
             {
                 switch (Select("     " + storyTitle.name + "               ", option))
                 {
                     case 1:
-                        Load(storyTitle.startFrom, 0);
+                        var globalVariable = JsonConvert.DeserializeObject<Variable[]>(File.ReadAllText(Directory.GetCurrentDirectory() + STORY_DIR + @"\globalVariable.json"));
+                        Load(storyTitle.startFrom, globalVariable);
                         break;
                     case 2:
                         var saveFile = LoadSave();
                         if (saveFile != null)
                         {
-                            Load(saveFile.stoeyName, saveFile.textLine);
+                            floorsLine.AddRange(saveFile.floorsLine);
+                            Load(saveFile.stoeyName, saveFile.globalVariable);
                         }
                         break;
                     case 3:
@@ -56,58 +64,198 @@ namespace StoryConsole
             }
         }
 
-        static void Load(string nextStoryName, int textLine)
+        static void Load(string nextStoryName, Variable[] globalVariable)
         {
+            jsEngine = new Engine();
+
+            var SC = new Dictionary<string, object>();
+            foreach (var v in globalVariable)
+            {
+                switch (v.type)
+                {
+                    case "string":
+                        SC.Add(v.name, v.value);
+                        break;
+                    case "number":
+                        SC.Add(v.name, Convert.ToDouble(v.value));
+                        break;
+                    case "boolean":
+                        SC.Add(v.name, Convert.ToBoolean(v.value));
+                        break;
+                    case "null":
+                        SC.Add(v.name, null);
+                        break;
+                }
+            }
+            jsEngine.SetValue("SC", SC);
+
             gameStatus = GameStatus.RUN;
-            while (gameStatus == GameStatus.RUN)
+            while (gameStatus != GameStatus.STOP)
             {
-                nextStoryName = RunStory(nextStoryName, textLine);
-                textLine = 0;
+                var commands = JsonConvert.DeserializeObject<Command[]>(File.ReadAllText(Directory.GetCurrentDirectory() + STORY_DIR + @"\" + nextStoryName + ".json"));
+                nextStoryName = RunStory(commands, nextStoryName, 0);
+
+                if (string.IsNullOrEmpty(nextStoryName))
+                {
+                    gameStatus = GameStatus.STOP;
+                }
+                else if(gameStatus == GameStatus.GOTO)
+                {
+                    gameStatus = GameStatus.RUN;
+                }
             }
         }
 
-        static string RunStory(string storyName, int textLine)
+        static string RunStory(Command[] commands, string storyName, int floor)
         {
-            if (string.IsNullOrEmpty(storyName))
+            var ifStatus = IfStatus.CONDITION_NOT_MET;
+
+            try
             {
-                gameStatus = GameStatus.STOP;
-                return "";
+                if(floor >= floorsLine.Count) floorsLine.Add(0);
+                for (; floorsLine[floor] < commands.Length; floorsLine[floor]++)
+                {
+                    var command = commands[floorsLine[floor]];
+                    if (command.show != null)
+                    {
+                        Show(command.show, storyName);
+                        if (gameStatus == GameStatus.STOP) return "";
+                    }
+                    else if (command.sleep != null)
+                    {
+                        wait((int)(command.sleep * 1000));
+                    }
+                    else if (command.select != null)
+                    {
+                        var result = command.select.option[Select(command.select.title, command.select.option, true) - 1].@goto;
+                        if (!string.IsNullOrEmpty(result)) {
+                            gameStatus = GameStatus.GOTO;
+                            return result; 
+                        }
+                    }
+                    else if (command.exec != null)
+                    {
+                        Exec(command.exec);
+                    }
+                    else if (command.@goto != null)
+                    {
+                        gameStatus = GameStatus.GOTO;
+                        return command.@goto;
+                    }
+                    else if (command.@continue != null)
+                    {
+                        gameStatus = GameStatus.CONTINUE;
+                        return null;
+                    }
+                    else if (command.@break != null)
+                    {
+                        gameStatus = GameStatus.BREAK;
+                        return null;
+                    }
+                    else if (command.@if != null)
+                    {
+                        if (floor < floorsLine.Count - 1 || jsEngine.Execute(command.@if).GetCompletionValue().AsBoolean())
+                        {
+                            ifStatus = IfStatus.CONDITION_MET;
+                            var result = RunStory(command.then, storyName, floor + 1);
+                            if (
+                                gameStatus == GameStatus.STOP ||
+                                gameStatus == GameStatus.BREAK ||
+                                gameStatus == GameStatus.CONTINUE ||
+                                gameStatus == GameStatus.GOTO
+                            )
+                            {
+                                return result;
+                            }
+                        }
+                        else
+                        {
+                            ifStatus = IfStatus.CONDITION_NOT_MET;
+                        }
+                    }
+                    else if (command.elseif != null)
+                    {
+                        if (floor < floorsLine.Count - 1 || ifStatus == IfStatus.CONDITION_NOT_MET && jsEngine.Execute(command.elseif).GetCompletionValue().AsBoolean())
+                        {
+                            ifStatus = IfStatus.CONDITION_MET;
+                            var result = RunStory(command.then, storyName, floor + 1);
+                            if (
+                                gameStatus == GameStatus.STOP ||
+                                gameStatus == GameStatus.BREAK ||
+                                gameStatus == GameStatus.CONTINUE ||
+                                gameStatus == GameStatus.GOTO
+                            )
+                            {
+                                return result;
+                            }
+                        }
+                    }
+                    else if (command.@else != null)
+                    {
+                        if (ifStatus == IfStatus.CONDITION_NOT_MET)
+                        {
+                            var result = RunStory(command.@else, storyName, floor + 1);
+                            if (
+                                gameStatus == GameStatus.STOP || 
+                                gameStatus == GameStatus.BREAK || 
+                                gameStatus == GameStatus.CONTINUE || 
+                                gameStatus == GameStatus.GOTO
+                            )
+                            {
+                                return result;
+                            }
+                        }
+                    }
+                    else if (command.@while != null)
+                    {
+                        while (true) {
+                            if (floor < floorsLine.Count - 1 || jsEngine.Execute(command.@while).GetCompletionValue().AsBoolean())
+                            {
+                                var result = RunStory(command.then, storyName, floor + 1);
+                                if (gameStatus == GameStatus.BREAK)
+                                {
+                                    gameStatus = GameStatus.RUN;
+                                    break;
+                                }
+                                else if (gameStatus == GameStatus.STOP || gameStatus == GameStatus.GOTO)
+                                {
+                                    return result;
+                                }
+                                else if (gameStatus == GameStatus.CONTINUE)
+                                {
+                                    gameStatus = GameStatus.RUN;
+                                }
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
+                return null;
             }
-            var story = JsonConvert.DeserializeObject<Story>(File.ReadAllText(Directory.GetCurrentDirectory() + STORY_DIR + @"\" + storyName + ".json"));
-            for (var i = textLine; i < story.story.Length; i++)
+            finally
             {
-                ShowStoreItem(story.story[i], storyName, i);
-                if (gameStatus != GameStatus.RUN) return "";
+                floorsLine.RemoveAt(floor);
             }
-            if (story.@goto != null)
-            {
-                return story.@goto;
-            }
-            else if (story.select == null)
-            {
-                gameStatus = GameStatus.STOP;
-                return "";
-            }
-            return story.select.option[Select(story.select.title, story.select.option) - 1].@goto;
         }
 
-        static void ShowStoreItem(StoryTextItem item, string storyName, int textLine)
+        static void Show(string text, string storyName)
         {
             while (gameStatus == GameStatus.RUN)
             {
-                Console.Write(item.text);
-                wait(item.sleep * 1000);
-                Console.WriteLine();
+                Console.WriteLine(jsEngine.Execute(text).GetCompletionValue());
                 Console.Write("                         按0選項:");
                 try
                 {
                     int selected = Convert.ToInt32(Console.ReadLine());
                     if (selected == 0)
                     {
-                        var option = new StorySelectOption[]{
-                            new StorySelectOption(){text = "返回"},
-                            new StorySelectOption(){text = "存檔"},
-                            new StorySelectOption(){text = "回主選單"},
+                        var option = new SelectOption[]{
+                            new SelectOption(){text = "返回"},
+                            new SelectOption(){text = "存檔"},
+                            new SelectOption(){text = "回主選單"},
                         };
                         while (true)
                         {
@@ -115,7 +263,7 @@ namespace StoryConsole
                             if (selected == 1) break;
                             else if (selected == 2) 
                             { 
-                                Save(storyName, textLine);
+                                Save(storyName);
                                 break;
                             }
                             else if (selected == 3)
@@ -133,31 +281,89 @@ namespace StoryConsole
             }
         }
 
-        static void Save(string storyName , int textLine)
+        static void Exec(string text)
         {
-            var option = new StorySelectOption[]{
-                new StorySelectOption(){text = "記錄檔1"},
-                new StorySelectOption(){text = "記錄檔2"},
-                new StorySelectOption(){text = "記錄檔3"},
-                new StorySelectOption(){text = "記錄檔4"},
-                new StorySelectOption(){text = "記錄檔5"},
-                new StorySelectOption(){text = "返回"},
+            jsEngine.Execute(text);
+        }
+
+        static void Save(string storyName)
+        {
+            var option = new SelectOption[]{
+                new SelectOption(){text = "記錄檔1"},
+                new SelectOption(){text = "記錄檔2"},
+                new SelectOption(){text = "記錄檔3"},
+                new SelectOption(){text = "記錄檔4"},
+                new SelectOption(){text = "記錄檔5"},
+                new SelectOption(){text = "返回"},
             };
             var fileItem = Select("    選擇記錄檔       ", option);
             if (fileItem == 6) return;
+            var globalVariable = new List<Variable>();
+            foreach (var name in jsEngine.GetValue("SC").ToObject() as Dictionary<string, object>)
+            {
+                switch (name.Value)
+                {
+                    case var v when v is string:
+                        globalVariable.Add(new Variable()
+                            {
+                                name = name.Key,
+                                type = "string",
+                                value = v as string
+                            }
+                        );
+                        break;
+                    case var v when v is int:
+                        globalVariable.Add(new Variable()
+                            {
+                                name = name.Key,
+                                type = "number",
+                                value = (Int64)v
+                            }
+                        );
+                        break;
+                    case var v when v is double:
+                        globalVariable.Add(new Variable()
+                            {
+                                name = name.Key,
+                                type = "number",
+                                value = (double)v
+                            }
+                        );
+                        break;
+                    case var v when v is bool:
+                        globalVariable.Add(new Variable()
+                            {
+                                name = name.Key,
+                                type = "boolean",
+                                value = (bool)v
+                            }
+                        );
+                        break;
+                    case var v when v is null:
+                        globalVariable.Add(new Variable()
+                            {
+                                name = name.Key,
+                                type = "null",
+                                value = null
+                            }
+                        );
+                        break;
+                }
+            }
             var saveFile = new SaveFile()
             {
                 stoeyName = storyName,
-                textLine = textLine
+                floorsLine = floorsLine.ToArray(),
+                globalVariable = globalVariable.ToArray()
             };
             File.WriteAllText(
                 Directory.GetCurrentDirectory() + SAVE_DIR + @"\save" + fileItem + ".json",
                 JsonConvert.SerializeObject(saveFile)
             );
 
-            option = new StorySelectOption[]{
-                new StorySelectOption(){text = "繼續遊戲"},
-                new StorySelectOption(){text = "離開遊戲"},
+            option = new SelectOption[]{
+                new SelectOption(){text = "繼續遊戲"},
+                new SelectOption(){text = "離開遊戲"},
             };
             switch (Select("請問您現在要?     ", option))
             {
@@ -171,13 +377,13 @@ namespace StoryConsole
 
         static SaveFile LoadSave(){
             while(true){
-                var option = new StorySelectOption[]{
-                    new StorySelectOption(){text = "記錄檔1"},
-                    new StorySelectOption(){text = "記錄檔2"},
-                    new StorySelectOption(){text = "記錄檔3"},
-                    new StorySelectOption(){text = "記錄檔4"},
-                    new StorySelectOption(){text = "記錄檔5"},
-                    new StorySelectOption(){text = "返回"},
+                var option = new SelectOption[]{
+                    new SelectOption(){text = "記錄檔1"},
+                    new SelectOption(){text = "記錄檔2"},
+                    new SelectOption(){text = "記錄檔3"},
+                    new SelectOption(){text = "記錄檔4"},
+                    new SelectOption(){text = "記錄檔5"},
+                    new SelectOption(){text = "返回"},
                 };
                 var fileItem = Select("    選擇記錄檔       ", option);
                 if (fileItem == 6) return null;
@@ -193,14 +399,14 @@ namespace StoryConsole
             }
         }
 
-        static int Select(string title, StorySelectOption[] option)
+        static int Select(string title, SelectOption[] option, bool useJsOption = false)
         {
             int selection = -1;
 
             Console.WriteLine(title);
             Console.WriteLine(new String('-', title.Length));
             for (var i = 0 ; i < option.Length ; i++)
-                Console.WriteLine("{0}. {1}", i + 1, option[i].text);
+                Console.WriteLine("{0}. {1}", i + 1, useJsOption ? jsEngine.Execute(option[i].text).GetCompletionValue() : option[i].text);
             Console.WriteLine(new String('-', title.Length));
             do
             {
@@ -226,17 +432,18 @@ namespace StoryConsole
                 Thread.Sleep(1000);
                 time -= 1000;
             }
+            Console.WriteLine('\n');
         }
 
         static void Character()
         {
             var character = JsonConvert.DeserializeObject<Character[]>(File.ReadAllText(Directory.GetCurrentDirectory() + STORY_DIR + @"\character.json"));
-            var option = new List<StorySelectOption>();
+            var option = new List<SelectOption>();
             foreach (var i in character)
             {
-                option.Add(new StorySelectOption() { text = i.name });
+                option.Add(new SelectOption() { text = i.name });
             }
-            option.Add(new StorySelectOption() { text = "反回" });
+            option.Add(new SelectOption() { text = "反回" });
             while (true)
             {
                 var selected = Select("    人物介紹      ", option.ToArray());

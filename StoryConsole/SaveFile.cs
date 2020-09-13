@@ -9,6 +9,14 @@ namespace StoryConsole
     class SaveFile
     {
         public string stoeyName;
-        public int textLine;
+        public int[] floorsLine;
+        public Variable[] globalVariable;
+    }
+
+    class Variable
+    {
+        public string name;
+        public string type;
+        public dynamic value;
     }
 }

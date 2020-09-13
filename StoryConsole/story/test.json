@@ -1,0 +1,80 @@
+[
+	{
+		"if": "SC.test == '測試字串變數'",
+		"then": [
+			{
+				"show": "'if'"
+			}
+		]
+	},
+	{
+		"elseif": "SC.test != 'a測試字串變數b'",
+		"then": [
+			{
+				"show": "'else if'"
+			}
+		]
+	},
+	{
+		"else": [
+			{
+				"show": "'else'"
+			}
+		]
+	},
+	{
+		"exec": "SC.t = 0"
+	},
+	{
+		"while": "SC.t < 4",
+		"then": [
+			{
+				"show": "SC.t"
+			},
+			{
+				"if": "true",
+				"then": [
+					{
+						"show": "'while內嵌if行數1'"
+					},
+					{
+						"show": "'while內嵌if行數2'"
+					},
+					{
+						"show": "'while內嵌if行數3'"
+					},
+				]
+			},
+			{
+				"exec": "SC.t++"
+			}
+		]
+	},
+	{
+		"select": {
+			"title": "       選擇       ",
+			"option": [
+				{
+					"text": "'A'",
+					"goto": null
+				},
+				{
+					"text": "'B'",
+					"goto": "test2"
+				},
+			]
+		}
+	},
+	{
+		"show": "'斯溝一'"
+	},
+	{
+		"sleep": 3
+	},
+	{
+		"goto": "test2"
+	},
+	{
+		"show": "'end'"
+	}
+]
