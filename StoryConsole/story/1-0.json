@@ -3,7 +3,7 @@
 		"show": "'故事開始'"
 	},
 	{
-		"sleep": 3
+		"sleep": "SC.sleepTime"
 	},
 	{
 		"goto": "1-1"

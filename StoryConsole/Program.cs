@@ -123,7 +123,20 @@ namespace StoryConsole
                     }
                     else if (command.sleep != null)
                     {
-                        wait((int)(command.sleep * 1000));
+                        long sec;
+                        if (command.sleep is long)
+                        {
+                            sec = (long)command.sleep;
+                        }
+                        else if (command.sleep is string)
+                        {
+                            sec = Convert.ToInt64(jsEngine.Execute(command.sleep as string).GetCompletionValue().AsNumber());
+                        }
+                        else
+                        {
+                            throw new Exception("sleep時間型別錯誤");
+                        }
+                        wait(sec * 1000);
                     }
                     else if (command.select != null)
                     {
@@ -424,7 +437,7 @@ namespace StoryConsole
             return selection;
         }
 
-        static void wait(int time)
+        static void wait(long time)
         {
             while (time > 0)
             {

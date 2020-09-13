@@ -11,7 +11,7 @@ namespace StoryConsole
         public string show;
         public string @goto;
         public Select select;
-        public int? sleep;
+        public dynamic sleep;
         public string exec;
         public dynamic @break;
         public dynamic @continue;

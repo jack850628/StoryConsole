@@ -26,7 +26,7 @@
 		"exec": "SC.t = 0"
 	},
 	{
-		"while": "SC.t < 4",
+		"while": "SC.t < 6",
 		"then": [
 			{
 				"show": "SC.t"
@@ -39,6 +39,32 @@
 					},
 					{
 						"show": "'while內嵌if行數2'"
+					},
+					{
+						"if": "SC.t == 2",
+						"then": [
+							{
+								"show": "'SC.t == 2'"
+							},
+							
+							{
+								"exec": "SC.t++"
+							},
+							{
+								"continue": ""
+							}
+						]
+					},
+					{
+						"if": "SC.t == 4",
+						"then": [
+							{
+								"show": "'SC.t == 4'"
+							},
+							{
+								"break": ""
+							}
+						]
 					},
 					{
 						"show": "'while內嵌if行數3'"

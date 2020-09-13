@@ -8,6 +8,10 @@
 		"name": "test2",
 		"type": "number",
 		"value": 123
+	},
+	{
+		"name": "sleepTime",
+		"type": "number",
+		"value": 2
 	}
-
 ]
