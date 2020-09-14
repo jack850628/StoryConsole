@@ -1,17 +1,12 @@
 [
 	{
-		"name": "test",
-		"type": "string",
-		"value": "測試字串變數"
+		"name": "momey",
+		"type": "number",
+		"value": 5
 	},
 	{
-		"name": "test2",
+		"name": "肥宅重",
 		"type": "number",
-		"value": 123
-	},
-	{
-		"name": "sleepTime",
-		"type": "number",
-		"value": 2
+		"value": 106
 	}
 ]
