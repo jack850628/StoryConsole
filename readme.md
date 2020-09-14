@@ -56,17 +56,17 @@ Console文字冒險故事框架 \
 ##### show
 ```
 {
-	"show": "故事內容(為javascript表達式)"
+	"show": "故事內容(為javascript運算式)"
 }
 ```
 ##### select
 ```
 {
 	"select": {
-		"title": "選項標題(為javascript表達式)",
+		"title": "選項標題(為javascript運算式)",
 		"option": [
 			{
-				"text": "選項(為javascript表達式)",
+				"text": "選項(為javascript運算式)",
 				"goto": "選擇該選項後，要跳至的故事JSON檔(不包含副檔名且必須放在story資料夾中)，當為null或空字串時會繼續執行當下的腳本檔"
 			},
 			...
@@ -83,20 +83,20 @@ Console文字冒險故事框架 \
 ##### sleep
 ```
 {
-	"sleep": 過場等待時間(整數且以秒為單位)，也可以是javascript表達式
+	"sleep": 過場等待時間(整數且以秒為單位)，也可以是javascript運算式
 }
 ```
 ##### exec
 ```
 {
-	"exec": "執行一段javascript表達式"
+	"exec": "執行一段javascript運算式"
 }
 ```
 
 ##### if elseif else
 ```
 {
-	"if": "一段javascript表達式",
+	"if": "一段javascript運算式",
 	"then": [
 		{
 			"show": "'當條件為真時要執行的指令'"
@@ -105,7 +105,7 @@ Console文字冒險故事框架 \
 	]
 },
 {
-	"elseif": "一段javascript表達式",
+	"elseif": "一段javascript運算式",
 	"then": [
 		{
 			"show": "'當條件為真要執行的指令'"
@@ -125,7 +125,7 @@ Console文字冒險故事框架 \
 ##### while break continue
 ```
 {
-	"while":  "一段javascript表達式",
+	"while":  "一段javascript運算式",
 	"then": [
 		{
 			"show": "'當條件為真要重複執行的指令'"
