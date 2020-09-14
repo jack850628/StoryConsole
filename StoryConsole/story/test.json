@@ -78,15 +78,19 @@
 	},
 	{
 		"select": {
-			"title": "       選擇       ",
+			"title": "'       選擇       '",
 			"option": [
 				{
 					"text": "'A'",
-					"goto": null
+					"then": []
 				},
 				{
 					"text": "'B'",
-					"goto": "test2"
+					"then": [
+						{
+							"goto": "test2"
+						}
+					]
 				},
 			]
 		}

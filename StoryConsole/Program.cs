@@ -9,7 +9,7 @@ namespace StoryConsole
 {
     class Program
     {
-        const string VERSION = "1.1.0914";
+        const string VERSION = "1.1.09142";
         const string SAVE_DIR = @"\save";
         const string STORY_DIR = @"\story";
         static Engine jsEngine = null;
@@ -140,10 +140,19 @@ namespace StoryConsole
                     }
                     else if (command.select != null)
                     {
-                        var result = command.select.option[Select(command.select.title, command.select.option, true) - 1].@goto;
-                        if (!string.IsNullOrEmpty(result)) {
-                            gameStatus = GameStatus.GOTO;
-                            return result; 
+                        var result = RunStory(
+                            command.select.option[Select(command.select.title, command.select.option, true) - 1].then, 
+                            storyName, 
+                            floor + 1
+                        );
+                        if (
+                            gameStatus == GameStatus.STOP ||
+                            gameStatus == GameStatus.BREAK ||
+                            gameStatus == GameStatus.CONTINUE ||
+                            gameStatus == GameStatus.GOTO
+                        )
+                        {
+                            return result;
                         }
                     }
                     else if (command.exec != null)
@@ -416,7 +425,7 @@ namespace StoryConsole
         {
             int selection = -1;
 
-            Console.WriteLine(title);
+            Console.WriteLine(useJsOption ? jsEngine.Execute(title).GetCompletionValue() : title);
             Console.WriteLine(new String('-', title.Length));
             for (var i = 0 ; i < option.Length ; i++)
                 Console.WriteLine("{0}. {1}", i + 1, useJsOption ? jsEngine.Execute(option[i].text).GetCompletionValue() : option[i].text);

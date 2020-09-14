@@ -14,6 +14,7 @@ namespace StoryConsole
 
     class SelectOption
     {
-        public string text, @goto;
+        public string text;
+        public Command[] then;
     }
 }
