@@ -138,7 +138,7 @@ Console文字冒險故事框架 \
 			"continue": "中斷當次的while，執行下一次while，注意！value，也就是冒號(:)後面接的可以是任何類型，但是不能為null"
 		},
 		{
-			"continue": "跳出while，注意！value，也就是冒號(:)後面接的可以是任何類型，但是不能為null"
+			"break": "跳出while，注意！value，也就是冒號(:)後面接的可以是任何類型，但是不能為null"
 		}
 		...
 	]
