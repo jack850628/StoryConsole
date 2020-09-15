@@ -36,7 +36,7 @@ Console文字冒險故事框架 \
 [
 	{
 		"name": "變數名稱，命名規則與javascript一致，注意：在故事的JSON檔中使用時，必須在變數名稱前加上SC.當作前輟",
-		"type": "變數型別，可以是string、number、boolean、null",
+		"type": "變數型別，可以是string、number、boolean、array、object",
 		"value": "變數值"
 	},
 	...
@@ -72,6 +72,7 @@ Console文字冒險故事框架 \
 						"show": "選擇該選項後，要執行的指令"
 					}
 				]
+				...
 			},
 			...
 		]

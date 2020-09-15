@@ -1,5 +1,6 @@
 ﻿using Jint;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,7 +14,7 @@ namespace StoryConsole
         const string SAVE_DIR = @"\save";
         const string STORY_DIR = @"\story";
         static Engine jsEngine = null;
-        readonly static List<int> floorsLine = new List<int>();
+        readonly static List<FloorInformation> floorsLine = new List<FloorInformation>();
 
         enum GameStatus
         {
@@ -74,17 +75,20 @@ namespace StoryConsole
                 switch (v.type)
                 {
                     case "string":
+                    case "number":
+                    case "boolean":
+                    case "object":
                         SC.Add(v.name, v.value);
                         break;
-                    case "number":
-                        SC.Add(v.name, Convert.ToDouble(v.value));
+                    case "array":
+                        var val = v.value as JArray;
+                        var arr = new object[val.Count];
+                        for (var i = 0; i < arr.Length; i++)
+                            arr[i] = val[i];
+                        SC.Add(v.name, arr);
                         break;
-                    case "boolean":
-                        SC.Add(v.name, Convert.ToBoolean(v.value));
-                        break;
-                    case "null":
-                        SC.Add(v.name, null);
-                        break;
+                    default:
+                        throw new Exception("變數型態錯誤");
                 }
             }
             jsEngine.SetValue("SC", SC);
@@ -112,10 +116,10 @@ namespace StoryConsole
 
             try
             {
-                if(floor >= floorsLine.Count) floorsLine.Add(0);
-                for (; floorsLine[floor] < commands.Length; floorsLine[floor]++)
+                if(floor >= floorsLine.Count) floorsLine.Add(new FloorInformation(){ line = 0 });
+                for (; floorsLine[floor].line < commands.Length; floorsLine[floor].line++)
                 {
-                    var command = commands[floorsLine[floor]];
+                    var command = commands[floorsLine[floor].line];
                     if (command.show != null)
                     {
                         Show(command.show, storyName);
@@ -140,11 +144,14 @@ namespace StoryConsole
                     }
                     else if (command.select != null)
                     {
+                        if(floor == floorsLine.Count - 1)
+                            floorsLine[floor].selecteOptionItem = Select(command.select.title, command.select.option, true) - 1;
                         var result = RunStory(
-                            command.select.option[Select(command.select.title, command.select.option, true) - 1].then, 
+                            command.select.option[(int)floorsLine[floor].selecteOptionItem].then, 
                             storyName, 
                             floor + 1
                         );
+                        floorsLine[floor].selecteOptionItem = null;
                         if (
                             gameStatus == GameStatus.STOP ||
                             gameStatus == GameStatus.BREAK ||
@@ -334,21 +341,12 @@ namespace StoryConsole
                             }
                         );
                         break;
-                    case var v when v is int:
+                    case var v when v is double || v is long:
                         globalVariable.Add(new Variable()
                             {
                                 name = name.Key,
                                 type = "number",
-                                value = (Int64)v
-                            }
-                        );
-                        break;
-                    case var v when v is double:
-                        globalVariable.Add(new Variable()
-                            {
-                                name = name.Key,
-                                type = "number",
-                                value = (double)v
+                                value = v
                             }
                         );
                         break;
@@ -361,12 +359,21 @@ namespace StoryConsole
                             }
                         );
                         break;
-                    case var v when v is null:
+                    case var v when v is object[]:
                         globalVariable.Add(new Variable()
                             {
                                 name = name.Key,
-                                type = "null",
-                                value = null
+                                type = "array",
+                                value = v
+                            }
+                        );
+                        break;
+                    case var v when v == null || v is object:
+                        globalVariable.Add(new Variable()
+                            {
+                                name = name.Key,
+                                type = "object",
+                                value = v
                             }
                         );
                         break;
