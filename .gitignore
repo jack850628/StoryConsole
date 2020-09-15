@@ -1,3 +1,5 @@
 StoryConsole/bin/
 StoryConsole/save/
 StoryConsole/obj/
+StoryConsole/publish/
+*.pfx

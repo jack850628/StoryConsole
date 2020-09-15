@@ -10,7 +10,7 @@ namespace StoryConsole
 {
     class Program
     {
-        const string VERSION = "1.1.09142";
+        public const string VERSION = "1.1.0915";
         const string SAVE_DIR = @"\save";
         const string STORY_DIR = @"\story";
         static Engine jsEngine = null;
