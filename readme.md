@@ -2,6 +2,8 @@
 Console文字冒險故事框架 \
 <img src="截圖1.png" width="300"></img>
 
+[網頁版](https://jack850628.github.io/StoryConsole/)
+
 ### 檔案結構
 ```
 |-StoryConsole.exe -> 框架執行檔
