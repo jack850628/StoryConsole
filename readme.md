@@ -3,6 +3,7 @@ Console文字冒險故事框架 \
 <img src="截圖1.png" width="300"></img>
 
 [網頁版](https://jack850628.github.io/StoryConsole/)
+[故事編輯器](https://github.com/jack850628/StoryConsoleEditor)
 
 ### 檔案結構
 ```
